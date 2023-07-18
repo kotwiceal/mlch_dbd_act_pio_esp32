@@ -1,18 +1,19 @@
-#include <Arduino.h>
+// include libraries 
+#include <devices.h>
 
-// put function declarations here:
-int myFunction(int, int);
+// conditional compilation
+#define SERIAL_PORT // use serial port;
 
+/// @brief Microcontroller initializing.
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+	#ifdef SERIAL_PORT
+		Serial.begin(115200);
+	#endif
+
+    initiate_ltc2636();
+    initiate_parameters();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
 }
