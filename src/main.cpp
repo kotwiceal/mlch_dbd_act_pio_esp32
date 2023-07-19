@@ -11,6 +11,7 @@ void setup() {
 	#endif
 
     initiate_ltc2636();
+	initiate_si5351();
     initiate_parameters();
 }
 
