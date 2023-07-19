@@ -3,6 +3,7 @@
 
 // conditional compilation
 #define SERIAL_PORT // use serial port;
+#define JSON_HANDLER // set of json data notation at wireless transfer;
 
 /// @brief Microcontroller initializing.
 void setup() {

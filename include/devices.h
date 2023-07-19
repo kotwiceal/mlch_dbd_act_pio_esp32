@@ -1,5 +1,6 @@
 // arduino framework libraries
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <si5351.h>
@@ -124,8 +125,48 @@ void set_frequency (uint8_t channel, float value) {
 }
 
 
+// present variables and functions as associative arrays
+std::map<String, std::function<void(uint8_t, float)>> functions = {{"dac", set_voltage}, {"fm", set_frequency}};
+std::map<String, std::vector<float>> parameters = {{"dac", voltage}, {"fm", frequency}};
+
+/**
+	* @brief Handle JSON packet presenting dictionary with keys 'dac' and 'fm' which values contain dictionary of 
+	* two one-dimensional vectors same size with names 'index' as integer and 'value' as float.
+	* According to keys 'dac' and 'fm' supporting function is consequently called to assign 
+	* value (mV or kHz) by index to device channel via digital interface.
+
+	* @param data serialized JSON data like '{"dac": {"index": [0, 1, 2], "value": [3, 4, 5]}, 
+		"fm": {"index": [0, 1, 2], "value": [3, 4, 5]}}'
+*/
+void json_handler (String data) {
+	DynamicJsonDocument document(1024);
+	#ifdef SERIAL_PORT
+		Serial.println(data);
+	#endif
+	deserializeJson(document, data);
+	JsonObject json_object = document.as<JsonObject>();
+	for(JsonPair json_pair: json_object) {
+		JsonObject json_pair_value = json_pair.value().as<JsonObject>();
+		JsonArray index_array = json_pair_value["index"];
+		JsonArray value_array = json_pair_value["value"];
+		if (index_array.size() == value_array.size()) {
+			for (int i = 0; i < index_array.size(); i++) {
+				int8_t index = index_array[i].as<int>();
+				float value = value_array[i].as<float>();
+				functions[json_pair.key().c_str()](index, value);
+				parameters[json_pair.key().c_str()][index] = value;
+			}
+		}
+	}
+}
+
 /// @brief Initialize devices by setting initial value to each channel.
 void initiate_parameters () {
-	for (int i = 0; i < voltage.size(); i++) {set_voltage(i, voltage[i]);}
-	for (int i = 0; i < frequency.size(); i++) {set_frequency(i, frequency[i]);}
+	for (auto device: parameters) {
+		String command = device.first;
+		std::vector<float> vector = device.second;
+		for (int i = 0; i < vector.size(); i++) {
+			functions[command](i, vector[i]);
+		}
+	}
 }
