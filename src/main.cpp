@@ -1,10 +1,16 @@
 // include libraries 
 #include <devices.h>
 #include <wifi_loc.h>
+#include <udp_server_loc.h>
 
 // conditional compilation
 #define SERIAL_PORT // use serial port;
 #define JSON_HANDLER // set of json data notation at wireless transfer;
+#define UDP_SOCKET // create udp socket and handle receiving packets;
+
+#ifdef UDP_SOCKET
+	#define UDP_PORT 8080
+#endif
 
 /// @brief Microcontroller initializing.
 void setup() {
@@ -13,6 +19,12 @@ void setup() {
 	#endif
 
 	initiate_wifi(&WiFi, &wifi_configuration);
+
+	#ifdef UDP_SOCKET
+		#ifdef JSON_HANDLER
+			AsyncUDP* upd_sock = initiate_udp_socket(UDP_PORT, json_handler);
+		#endif
+	#endif
 
     initiate_ltc2636();
 	initiate_si5351();
