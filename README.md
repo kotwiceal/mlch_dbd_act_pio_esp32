@@ -5,4 +5,4 @@ PlatformIO project purposes a building firmware EPS32 Espressif Systems microcon
 ```
 where `'dac'` and `'fm'` designate a command to control of devices: DACs and frequency generators correspondingly; `'index'` and `'value'` are same size vector arbitrary length and present itself index of channel `0-15` and its value (voltage or frequency). Range of `'value'` for DACs consists `0-4000 [mV]` and frequency generators -- `0-160 [kHz]`.
 
-UDP server is hosted by port `8080`.
+UDP server is hosted by port `8080`, HTTP server - `8090`. Default IP-Address is `192.168.1.1`.
