@@ -33,6 +33,10 @@
 	// #define HTTP_STATIC
 #endif
 
+// select wifi network mode
+#define WIFI_M_STA
+// #define WIFI_M_AP
+
 // define commands
 #define SETVOL 0b0011 // SPI command of setting voltage;
 #define TCAADDR_0 0x70 // I2C address of TCA9548A;
@@ -196,14 +200,16 @@ void initiate_parameters () {
 
 // define configuration of WiFi network;
 struct wifi_net {
-	const char* ssid = "esp32_dbd";
-	const char* password = "qwerty123";
+	const char* ssid = "ssidofnetwork";
+	const char* password = "password";
 	const int channel = 1;
 	const int ssid_hidden = 0;
 	const int max_connection = 1;
 	IPAddress local_ip = IPAddress(192, 168, 1, 1);
 	IPAddress gateway = IPAddress(192, 168, 1, 1);
 	IPAddress subnet = IPAddress(255, 255, 255, 0);
+	IPAddress dns1 = IPAddress(8, 8, 8, 8);
+	IPAddress dns2 = IPAddress(8, 8, 4, 4);
 } wifi_configuration;
 
 /**
@@ -211,12 +217,24 @@ struct wifi_net {
  * @param configuration struct with fileds: ssid, password, channel, ssid hidden, max connection.
  * @return wifi instance
 */
-WiFiClass* initiate_wifi(wifi_net* configuration) {
+WiFiClass* initiate_wifi (wifi_net* configuration) {
 	WiFiClass* wifi = new WiFiClass;
-	wifi->mode(WIFI_AP);
-	wifi->softAP(configuration->ssid, configuration->password, configuration->channel, 
-		configuration->ssid_hidden, configuration->max_connection);
-	wifi->softAPConfig(configuration->local_ip, configuration->gateway, configuration->subnet);
+	#ifdef WIFI_M_STA
+		wifi->mode(WIFI_STA);
+		wifi->begin(configuration->ssid, configuration->password);
+		if (!wifi->config(configuration->local_ip, configuration->gateway, configuration->subnet, 
+			configuration->dns1, configuration->dns2)) {
+			#ifdef SERIAL_PORT
+				Serial.println("STA Failed to configure");
+			#endif
+		}
+	#endif
+	#ifdef WIFI_M_AP
+		wifi->mode(WIFI_AP);
+		wifi->softAP(configuration->ssid, configuration->password, configuration->channel, 
+			configuration->ssid_hidden, configuration->max_connection);
+		wifi->softAPConfig(configuration->local_ip, configuration->gateway, configuration->subnet);
+	#endif
 	#ifdef SERIAL_PORT
 		Serial.printf("MAC address = %s\n", wifi->softAPmacAddress().c_str());
 		Serial.println("IP address = " + wifi->localIP().toString());
@@ -265,7 +283,7 @@ struct WebFile {
  * @param dirname catalog name of scaning
  * @return pathes vector
 */
-std::vector<String> get_pathes(fs::FS* fs, const char * dirname){
+std::vector<String> get_pathes (fs::FS* fs, const char * dirname){
 	std::vector<String> pathes;
     File root = fs->open(dirname);
     if(!root){
@@ -381,7 +399,7 @@ AsyncWebServer* initiate_http_server (uint16_t port, std::map<String, std::vecto
  * @param spiffs SPIFFS instance
  * @param webfiles configuration of routed files
 */
-void route_static_files(AsyncWebServer* http_server, fs::SPIFFSFS* spiffs, std::vector<WebFile>* webfiles) {
+void route_static_files (AsyncWebServer* http_server, fs::SPIFFSFS* spiffs, std::vector<WebFile>* webfiles) {
     for (WebFile webfile: *webfiles) {
         char url[webfile.url.length() + 1];
         webfile.url.toCharArray(url, webfile.url.length() + 1);
